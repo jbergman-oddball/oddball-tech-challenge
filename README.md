@@ -1,4 +1,5 @@
-# oddball-tech-challenge
-Oddball Tech Challenge Repo
+# Firebase Studio
 
-This repo is dedicated to the Oddball Tech Challenge Project for the Oddcore Innovation Cup
+This is a NextJS starter in Firebase Studio.
+
+To get started, take a look at src/app/page.tsx.
