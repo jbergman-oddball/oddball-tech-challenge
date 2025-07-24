@@ -101,7 +101,7 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$context$2f$app$2d$con
 ;
 ;
 const metadata = {
-    title: 'CodeAlchemist',
+    title: 'Oddball Tech Challenge',
     description: 'The ultimate tech challenge system.'
 };
 function RootLayout({ children }) {

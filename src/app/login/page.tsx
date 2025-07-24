@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState } from "react";
@@ -51,19 +50,27 @@ export default function LoginPage() {
 
   async function onSubmit(values: z.infer<typeof LoginFormSchema>) {
     setIsLoading(true);
+    console.log("Attempting login..."); // Added logging
     try {
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const idToken = await userCredential.user.getIdToken();
+      console.log("User logged in successfully, got ID token."); // Added logging
       
       await setSession(idToken);
+      console.log("Session set."); // Added logging
       
       toast({
         title: "Login Successful",
         description: "Welcome back!",
       });
+      console.log("Toast displayed."); // Added logging
 
+      console.log("Attempting to redirect to /dashboard"); // Existing logging
       router.push("/dashboard");
+      console.log("router.push called."); // Added logging
+
     } catch (error: any) {
+      console.error("Login failed:", error); // Added logging
       toast({
         variant: "destructive",
         title: "Login Failed",
@@ -71,6 +78,7 @@ export default function LoginPage() {
       });
     } finally {
       setIsLoading(false);
+      console.log("Login process finished."); // Added logging
     }
   }
 

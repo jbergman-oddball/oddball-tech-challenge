@@ -18,17 +18,49 @@ import { sendApprovalConfirmationEmail } from "./email";
 const sessionCookieName = 'codealchemist-session';
 
 export async function createCustomChallengeAction(
-  data: z.infer<typeof CustomChallengeFormSchema>
+  formData: FormData // Accept FormData directly
 ) {
   const { db } = getFirebaseAdmin();
-  const validatedData = CustomChallengeFormSchema.safeParse(data);
-  if (!validatedData.success) {
-    throw new Error("Invalid form data.");
+
+  // Extract data from FormData
+  const candidateName = formData.get('candidateName') as string;
+  const candidateEmail = formData.get('candidateEmail') as string;
+  const jobTitle = formData.get('jobTitle') as string;
+  const resumeFile = formData.get('resumeFile') as File | null; // Get the file
+  const resumeText = formData.get('resumeText') as string | null; // Get resume text if provided
+
+  // Basic validation (you might want more robust validation)
+  if (!candidateName || !candidateEmail || !jobTitle || (!resumeFile && !resumeText)) {
+      throw new Error("Missing required form data.");
   }
 
-  const { candidateName, candidateEmail, jobTitle, resume } = validatedData.data;
+  let resumeContent = '';
 
-  const aiInput: GenerateCustomChallengeInput = { jobTitle, resume };
+  if (resumeFile) {
+      // **TODO: Implement actual resume file upload to storage**
+      // Example: Upload resumeFile to Firebase Storage and get a download URL
+      console.log(`Handling resume file upload: ${resumeFile.name}, type: ${resumeFile.type}, size: ${resumeFile.size} bytes`);
+
+      // Placeholder for file upload logic
+      // const resumeUrl = await uploadFileToStorage(resumeFile);
+      // resumeContent = `[Resume uploaded: ${resumeUrl}]`; // Or store the URL
+       resumeContent = `[Resume file: ${resumeFile.name}]`; // Placeholder
+
+      // **TODO: Extract text from the resume file if needed for AI flow**
+       // For now, we'll just use a placeholder or rely on resumeText if provided
+       if (resumeText) {
+            resumeContent = resumeText; // Use text if provided
+       }
+
+  } else if (resumeText) {
+       resumeContent = resumeText;
+  }
+
+  if (!resumeContent) {
+       throw new Error("Resume content is missing.");
+  }
+
+  const aiInput: GenerateCustomChallengeInput = { jobTitle, resume: resumeContent };
   const result = await generateCustomChallenge(aiInput);
 
   const newChallenge = {
@@ -38,6 +70,8 @@ export async function createCustomChallengeAction(
     ...result,
     status: "Pending",
     createdAt: new Date(),
+     // **TODO: Store resume file URL or reference in the challenge document**
+     // resumeUrl: resumeUrl, 
   };
 
   try {
@@ -133,4 +167,42 @@ export async function approveUser(uid: string): Promise<{ success: boolean; erro
         console.error('Error approving user:', error);
         return { success: false, error: 'An unexpected error occurred during approval.' };
     }
+}
+
+export async function extendSession(): Promise<{ success: boolean; error?: string }> {
+  const { auth } = getFirebaseAdmin();
+  const sessionCookie = cookies().get(sessionCookieName)?.value;
+
+  if (!sessionCookie) {
+    return { success: false, error: 'No session cookie found.' };
+  }
+
+  try {
+    // Verify the session cookie and get the user's UID
+    const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+    const uid = decodedClaims.uid;
+
+    // **TODO: Implement session refreshing logic**
+    // This is a placeholder. You might need to get a new ID token using a refresh token
+    // stored on the server, or re-mint the session cookie based on your setup.
+    console.log('Extending session for user:', uid);
+
+    // For demonstration, re-minting the session cookie with the existing ID token
+    // This might not be the most secure or robust way to extend a session in production.
+    // Consider using refresh tokens or other mechanisms provided by Firebase Auth.
+    const expiresIn = 60 * 60 * 24 * 5 * 1000; // Renew for 5 days
+    const newSessionCookie = await auth.createSessionCookie(sessionCookie, { expiresIn }); // Using old session cookie to create new one (check Firebase docs for best practice)
+
+     cookies().set(sessionCookieName, newSessionCookie, {
+      maxAge: expiresIn,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    return { success: true };
+  } catch (error: any) {
+    console.error('Error extending session:', error);
+    cookies().delete(sessionCookieName); // Clear cookie on error
+    return { success: false, error: error.message || 'Failed to extend session.' };
+  }
 }

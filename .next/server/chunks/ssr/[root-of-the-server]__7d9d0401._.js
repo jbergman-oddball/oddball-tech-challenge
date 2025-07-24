@@ -365,6 +365,7 @@ var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({
     "CustomChallengeFormSchema": (()=>CustomChallengeFormSchema),
+    "ManualChallengeFormSchema": (()=>ManualChallengeFormSchema),
     "PromptChallengeFormSchema": (()=>PromptChallengeFormSchema)
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/zod/lib/index.mjs [app-rsc] (ecmascript)");
@@ -388,6 +389,27 @@ const PromptChallengeFormSchema = __TURBOPACK__imported__module__$5b$project$5d2
         message: "Prompt must be at least 20 characters."
     })
 });
+const ManualChallengeFormSchema = __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].object({
+    title: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string().min(5, {
+        message: "Challenge title must be at least 5 characters."
+    }),
+    description: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string().min(20, {
+        message: "Description must be at least 20 characters."
+    }),
+    requirements: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string().min(10, {
+        message: "Requirements must be at least 10 characters."
+    }),
+    setupInstructions: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string().min(10, {
+        message: "Setup instructions must be at least 10 characters."
+    }),
+    // Touch points will be an array of objects
+    touchPoints: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].array(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].object({
+        id: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string(),
+        description: __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$zod$2f$lib$2f$index$2e$mjs__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["z"].string().min(1, {
+            message: "Touch point description cannot be empty."
+        })
+    })).optional()
+});
 }}),
 "[externals]/firebase-admin [external] (firebase-admin, cjs)": (function(__turbopack_context__) {
 
@@ -407,32 +429,40 @@ __turbopack_context__.s({
 });
 var __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__ = __turbopack_context__.i("[externals]/firebase-admin [external] (firebase-admin, cjs)");
 ;
-// No need to import 'base-64' anymore if we use Buffer
 let firebaseAdminApp = null;
 function initializeFirebaseAdmin() {
     // If the app is already initialized, do nothing.
-    if (__TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["apps"].length > 0) {
-        firebaseAdminApp = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["app"])();
+    if (__TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.apps.length > 0) {
+        firebaseAdminApp = __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.app();
         return;
     }
+    // --- Add these checks ---
+    if (!__TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__ || !__TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.INTERNAL) {
+        console.error("Firebase Admin SDK not loaded correctly. 'admin' or 'admin.INTERNAL' is undefined.");
+        // Depending on how critical this is, you might throw an error here
+        // or just return and let the getFirebaseAdmin() handle the uninitialized state.
+        return;
+    }
+    // --- End of checks ---
     // Use individual environment variables for reliability.
     const projectId = process.env.FIREBASE_PROJECT_ID;
-    const privateKeyBase64 = process.env.FIREBASE_PRIVATE_KEY_BASE64; // Get the Base64 string
+    // Get the private key string directly - expect actual newlines in the env var
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-    if (!projectId || !privateKeyBase64 || !clientEmail) {
-        console.error('Firebase Admin SDK environment variables (FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY_BASE64, FIREBASE_CLIENT_EMAIL) are not set. Please check your .env.local file.');
+    if (!projectId || !privateKey || !clientEmail) {
+        console.error('Firebase Admin SDK environment variables (FIREBASE_PROJECT_ID, FIREBASE_PRIVATE_KEY, FIREBASE_CLIENT_EMAIL) are not set. Please check your .env.local file.');
         return;
     }
     try {
-        // Create a buffer from the Base64 private key
-        const privateKeyBuffer = Buffer.from(privateKeyBase64, 'base64');
-        firebaseAdminApp = (0, __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["initializeApp"])({
-            credential: __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["credential"].cert({
+        // Pass the private key string directly, assuming it has actual newlines
+        firebaseAdminApp = __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.initializeApp({
+            credential: __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.credential.cert({
                 projectId: projectId,
-                privateKey: privateKeyBuffer,
+                privateKey: privateKey,
                 clientEmail: clientEmail
             })
         });
+        console.log("Firebase Admin SDK initialized successfully!"); // Add this log
     } catch (e) {
         console.error('Firebase Admin SDK initialization from individual variables failed. Error:', e.message);
         console.error('Full error object:', e); // Log the full error object
@@ -450,8 +480,8 @@ function getFirebaseAdmin() {
         }
     }
     return {
-        auth: (0, __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["auth"])(firebaseAdminApp),
-        db: (0, __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__["firestore"])(firebaseAdminApp)
+        auth: __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.auth(firebaseAdminApp),
+        db: __TURBOPACK__imported__module__$5b$externals$5d2f$firebase$2d$admin__$5b$external$5d$__$28$firebase$2d$admin$2c$__cjs$29$__.firestore(firebaseAdminApp)
     };
 }
 }}),
@@ -540,11 +570,12 @@ async function sendApprovalConfirmationEmail(userEmail, userName) {
 
 var { g: global, __dirname } = __turbopack_context__;
 {
-/* __next_internal_action_entry_do_not_use__ [{"004d765f8ee33ffd20dce0c1206a246e29d9cc85b7":"clearSession","00a5919b335be762e3774c2b3bc151ba6a29998d74":"getAllUsers","401841db4870e8b80fb4a3a376d00deb743cc0d149":"approveUser","40519222aefdfdf649761d99ebac966a6fc8d26da1":"createPromptedChallengeAction","407bb875fe093987d25a06b123123d369424673d75":"createCustomChallengeAction","40ca39d5f50decb7fb06203a997f3e96ccfe384060":"setSession"},"",""] */ __turbopack_context__.s({
+/* __next_internal_action_entry_do_not_use__ [{"004d765f8ee33ffd20dce0c1206a246e29d9cc85b7":"clearSession","00a5919b335be762e3774c2b3bc151ba6a29998d74":"getAllUsers","00fdc8afa6f9a1b3d43114ccecda30d103e9996acb":"extendSession","401841db4870e8b80fb4a3a376d00deb743cc0d149":"approveUser","40519222aefdfdf649761d99ebac966a6fc8d26da1":"createPromptedChallengeAction","407bb875fe093987d25a06b123123d369424673d75":"createCustomChallengeAction","40ca39d5f50decb7fb06203a997f3e96ccfe384060":"setSession"},"",""] */ __turbopack_context__.s({
     "approveUser": (()=>approveUser),
     "clearSession": (()=>clearSession),
     "createCustomChallengeAction": (()=>createCustomChallengeAction),
     "createPromptedChallengeAction": (()=>createPromptedChallengeAction),
+    "extendSession": (()=>extendSession),
     "getAllUsers": (()=>getAllUsers),
     "setSession": (()=>setSession)
 });
@@ -566,16 +597,42 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 ;
 ;
 const sessionCookieName = 'codealchemist-session';
-async function createCustomChallengeAction(data) {
+async function createCustomChallengeAction(formData// Accept FormData directly
+) {
     const { db } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getFirebaseAdmin"])();
-    const validatedData = __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$schemas$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["CustomChallengeFormSchema"].safeParse(data);
-    if (!validatedData.success) {
-        throw new Error("Invalid form data.");
+    // Extract data from FormData
+    const candidateName = formData.get('candidateName');
+    const candidateEmail = formData.get('candidateEmail');
+    const jobTitle = formData.get('jobTitle');
+    const resumeFile = formData.get('resumeFile'); // Get the file
+    const resumeText = formData.get('resumeText'); // Get resume text if provided
+    // Basic validation (you might want more robust validation)
+    if (!candidateName || !candidateEmail || !jobTitle || !resumeFile && !resumeText) {
+        throw new Error("Missing required form data.");
     }
-    const { candidateName, candidateEmail, jobTitle, resume } = validatedData.data;
+    let resumeContent = '';
+    if (resumeFile) {
+        // **TODO: Implement actual resume file upload to storage**
+        // Example: Upload resumeFile to Firebase Storage and get a download URL
+        console.log(`Handling resume file upload: ${resumeFile.name}, type: ${resumeFile.type}, size: ${resumeFile.size} bytes`);
+        // Placeholder for file upload logic
+        // const resumeUrl = await uploadFileToStorage(resumeFile);
+        // resumeContent = `[Resume uploaded: ${resumeUrl}]`; // Or store the URL
+        resumeContent = `[Resume file: ${resumeFile.name}]`; // Placeholder
+        // **TODO: Extract text from the resume file if needed for AI flow**
+        // For now, we'll just use a placeholder or rely on resumeText if provided
+        if (resumeText) {
+            resumeContent = resumeText; // Use text if provided
+        }
+    } else if (resumeText) {
+        resumeContent = resumeText;
+    }
+    if (!resumeContent) {
+        throw new Error("Resume content is missing.");
+    }
     const aiInput = {
         jobTitle,
-        resume
+        resume: resumeContent
     };
     const result = await (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$ai$2f$flows$2f$generate$2d$custom$2d$challenge$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["generateCustomChallenge"])(aiInput);
     const newChallenge = {
@@ -675,6 +732,47 @@ async function approveUser(uid) {
         };
     }
 }
+async function extendSession() {
+    const { auth } = (0, __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$firebase$2f$server$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getFirebaseAdmin"])();
+    const sessionCookie = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["cookies"])().get(sessionCookieName)?.value;
+    if (!sessionCookie) {
+        return {
+            success: false,
+            error: 'No session cookie found.'
+        };
+    }
+    try {
+        // Verify the session cookie and get the user's UID
+        const decodedClaims = await auth.verifySessionCookie(sessionCookie, true);
+        const uid = decodedClaims.uid;
+        // **TODO: Implement session refreshing logic**
+        // This is a placeholder. You might need to get a new ID token using a refresh token
+        // stored on the server, or re-mint the session cookie based on your setup.
+        console.log('Extending session for user:', uid);
+        // For demonstration, re-minting the session cookie with the existing ID token
+        // This might not be the most secure or robust way to extend a session in production.
+        // Consider using refresh tokens or other mechanisms provided by Firebase Auth.
+        const expiresIn = 60 * 60 * 24 * 5 * 1000; // Renew for 5 days
+        const newSessionCookie = await auth.createSessionCookie(sessionCookie, {
+            expiresIn
+        }); // Using old session cookie to create new one (check Firebase docs for best practice)
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["cookies"])().set(sessionCookieName, newSessionCookie, {
+            maxAge: expiresIn,
+            httpOnly: true,
+            secure: ("TURBOPACK compile-time value", "development") === "production"
+        });
+        return {
+            success: true
+        };
+    } catch (error) {
+        console.error('Error extending session:', error);
+        (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$headers$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["cookies"])().delete(sessionCookieName); // Clear cookie on error
+        return {
+            success: false,
+            error: error.message || 'Failed to extend session.'
+        };
+    }
+}
 ;
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$action$2d$validate$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["ensureServerEntryExports"])([
     createCustomChallengeAction,
@@ -682,7 +780,8 @@ async function approveUser(uid) {
     setSession,
     clearSession,
     getAllUsers,
-    approveUser
+    approveUser,
+    extendSession
 ]);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createCustomChallengeAction, "407bb875fe093987d25a06b123123d369424673d75", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(createPromptedChallengeAction, "40519222aefdfdf649761d99ebac966a6fc8d26da1", null);
@@ -690,6 +789,7 @@ async function approveUser(uid) {
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(clearSession, "004d765f8ee33ffd20dce0c1206a246e29d9cc85b7", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(getAllUsers, "00a5919b335be762e3774c2b3bc151ba6a29998d74", null);
 (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(approveUser, "401841db4870e8b80fb4a3a376d00deb743cc0d149", null);
+(0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$build$2f$webpack$2f$loaders$2f$next$2d$flight$2d$loader$2f$server$2d$reference$2e$js__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["registerServerReference"])(extendSession, "00fdc8afa6f9a1b3d43114ccecda30d103e9996acb", null);
 }}),
 "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript) <locals>": ((__turbopack_context__) => {
 "use strict";
@@ -698,6 +798,12 @@ var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({});
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/actions.ts [app-rsc] (ecmascript)");
+;
+;
+;
+;
+;
+;
 ;
 }}),
 "[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => \"[project]/src/lib/actions.ts [app-rsc] (ecmascript)\" } [app-rsc] (server actions loader, ecmascript) <module evaluation>": ((__turbopack_context__) => {
@@ -715,6 +821,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server
 var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({
+    "004d765f8ee33ffd20dce0c1206a246e29d9cc85b7": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["clearSession"]),
+    "00a5919b335be762e3774c2b3bc151ba6a29998d74": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["getAllUsers"]),
+    "00fdc8afa6f9a1b3d43114ccecda30d103e9996acb": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["extendSession"]),
+    "401841db4870e8b80fb4a3a376d00deb743cc0d149": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["approveUser"]),
+    "40519222aefdfdf649761d99ebac966a6fc8d26da1": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createPromptedChallengeAction"]),
+    "407bb875fe093987d25a06b123123d369424673d75": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["createCustomChallengeAction"]),
     "40ca39d5f50decb7fb06203a997f3e96ccfe384060": (()=>__TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__["setSession"])
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/src/lib/actions.ts [app-rsc] (ecmascript)");
@@ -726,6 +838,12 @@ var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server
 var { g: global, __dirname } = __turbopack_context__;
 {
 __turbopack_context__.s({
+    "004d765f8ee33ffd20dce0c1206a246e29d9cc85b7": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["004d765f8ee33ffd20dce0c1206a246e29d9cc85b7"]),
+    "00a5919b335be762e3774c2b3bc151ba6a29998d74": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["00a5919b335be762e3774c2b3bc151ba6a29998d74"]),
+    "00fdc8afa6f9a1b3d43114ccecda30d103e9996acb": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["00fdc8afa6f9a1b3d43114ccecda30d103e9996acb"]),
+    "401841db4870e8b80fb4a3a376d00deb743cc0d149": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["401841db4870e8b80fb4a3a376d00deb743cc0d149"]),
+    "40519222aefdfdf649761d99ebac966a6fc8d26da1": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["40519222aefdfdf649761d99ebac966a6fc8d26da1"]),
+    "407bb875fe093987d25a06b123123d369424673d75": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["407bb875fe093987d25a06b123123d369424673d75"]),
     "40ca39d5f50decb7fb06203a997f3e96ccfe384060": (()=>__TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$exports$3e$__["40ca39d5f50decb7fb06203a997f3e96ccfe384060"])
 });
 var __TURBOPACK__imported__module__$5b$project$5d2f2e$next$2d$internal$2f$server$2f$app$2f$login$2f$page$2f$actions$2e$js__$7b$__ACTIONS_MODULE0__$3d3e$__$225b$project$5d2f$src$2f$lib$2f$actions$2e$ts__$5b$app$2d$rsc$5d$__$28$ecmascript$2922$__$7d$__$5b$app$2d$rsc$5d$__$28$server__actions__loader$2c$__ecmascript$29$__$3c$module__evaluation$3e$__ = __turbopack_context__.i('[project]/.next-internal/server/app/login/page/actions.js { ACTIONS_MODULE0 => "[project]/src/lib/actions.ts [app-rsc] (ecmascript)" } [app-rsc] (server actions loader, ecmascript) <module evaluation>');
